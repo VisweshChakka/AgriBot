@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriBot</title>
+    <script src="config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    boxShadow: {
+                        glow: '0 24px 80px rgba(2, 6, 23, 0.5)',
+                        soft: '0 18px 50px rgba(15, 23, 42, 0.28)'
+                    }
+                }
+            }
+        };
+    </script>
+    <script>
+        (() => {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+</head>
+<body class="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.14),transparent_28%),radial-gradient(circle_at_85%_15%,rgba(16,185,129,0.1),transparent_22%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.12),transparent_26%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_52%,#e7effa_100%)] text-slate-900 transition-colors dark:bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),radial-gradient(circle_at_85%_15%,rgba(45,212,191,0.12),transparent_22%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.16),transparent_26%),linear-gradient(180deg,#030712_0%,#081120_52%,#0b1326_100%)] dark:text-slate-100">
+    <div class="pointer-events-none fixed inset-0 overflow-hidden">
+        <div class="absolute left-[-8rem] top-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl dark:bg-cyan-400/10"></div>
+        <div class="absolute right-[-6rem] top-16 h-80 w-80 rounded-full bg-indigo-500/10 blur-3xl"></div>
+        <div class="absolute bottom-[-8rem] left-1/3 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl dark:bg-emerald-400/10"></div>
+    </div>
+
+    <div class="relative mx-auto flex min-h-screen max-w-[1180px] flex-col gap-4 px-3 py-3 sm:gap-5 sm:px-5 sm:py-5 lg:px-8">
+        <header class="flex flex-col gap-4 rounded-[24px] border border-slate-200/70 bg-white/75 px-4 py-4 shadow-glow backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 dark:border-white/10 dark:bg-slate-950/55">
+            <div class="flex items-center gap-3">
+                <div class="grid h-12 w-12 place-items-center rounded-2xl border border-white/15 bg-gradient-to-br from-sky-300 via-cyan-400 to-blue-600 text-base font-bold tracking-[0.2em] text-slate-950 shadow-soft">AI</div>
+                <div>
+                    <div class="mb-1 inline-flex items-center rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-400/10 dark:text-cyan-200">Live assistant</div>
+                    <h1 class="text-xl font-semibold text-slate-950 sm:text-2xl dark:text-white">Agribot</h1>
+                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">A cleaner single-page interface with ephemeral conversations</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                <button id="themeToggleBtn" type="button" class="rounded-xl border border-slate-200 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:border-cyan-300/30 dark:hover:bg-white/10">Light mode</button>
+                <div id="statusBadge" class="rounded-full border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400">Checking connection...</div>
+                <div id="apiBadge" class="rounded-full border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400">Checking APIs...</div>
+                <button id="newChatBtn" type="button" class="rounded-xl border border-slate-200 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:border-cyan-300/30 dark:hover:bg-white/10">New Chat</button>
+            </div>
+        </header>
+
+        <main class="grid min-h-0 flex-1 gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <aside class="hidden rounded-[28px] border border-slate-200/70 bg-white/70 p-5 shadow-glow backdrop-blur-xl lg:flex lg:flex-col dark:border-white/10 dark:bg-slate-950/45">
+                <div class="mb-5">
+                    <div class="text-xs font-medium uppercase tracking-[0.25em] text-slate-500 dark:text-slate-500">Workspace</div>
+                    <h2 class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Ask better, faster</h2>
+                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">Transient chat, clean UI, and a quick read on whether your Gemini keys are live.</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
+                        <div class="text-sm font-medium text-slate-950 dark:text-white">Ephemeral by design</div>
+                        <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-400">Nothing is stored after the tab closes. Each session lives only in the browser.</p>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
+                        <div class="text-sm font-medium text-slate-950 dark:text-white">Key visibility</div>
+                        <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-400">Use the header badges to see if the app is reachable and whether APIs are configured or active.</p>
+                    </div>
+                    <div class="rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 to-indigo-500/10 p-4 dark:border-cyan-400/15">
+                        <div class="text-sm font-medium text-cyan-700 dark:text-cyan-100">Prompt tip</div>
+                        <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">Ask with context and constraints. The chat keeps only the current open-session conversation.</p>
+                    </div>
+                </div>
+
+                <div class="mt-auto rounded-2xl border border-slate-200/80 bg-slate-50/75 p-4 dark:border-white/10 dark:bg-slate-900/60">
+                    <div class="text-xs uppercase tracking-[0.2em] text-slate-500">Quick actions</div>
+                    <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
+                        <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">Explain a topic</span>
+                        <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">Draft a message</span>
+                        <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">Summarize text</span>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[30px] border border-slate-200/70 bg-white/72 shadow-glow backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/55">
+                <div class="border-b border-slate-200/80 px-4 py-4 sm:px-6 sm:py-5 dark:border-white/10">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <div class="text-xs font-medium uppercase tracking-[0.25em] text-slate-500">Conversation</div>
+                            <h2 class="mt-1 text-lg font-semibold text-slate-950 dark:text-white">Fresh session</h2>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">No saved history</span>
+                            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">Single file UI</span>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="messages" class="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
+                <div id="welcome" class="mx-auto my-auto max-w-[680px] text-center text-slate-500 dark:text-slate-400">
+                    <div class="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-[28px] border border-slate-200 bg-gradient-to-br from-sky-300/25 via-cyan-400/15 to-emerald-400/15 text-[34px] font-semibold text-slate-900 shadow-soft dark:border-white/10 dark:text-white">AI</div>
+                    <h2 class="mb-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl dark:text-white">Start chatting</h2>
+                    <p class="mx-auto max-w-[560px] text-sm leading-7 text-slate-600 sm:text-base dark:text-slate-400">A lightweight, better-looking chat surface with no login, no landing page, no stored history, and API status visible at the top.</p>
+                    <div class="mt-6 flex flex-wrap items-center justify-center gap-2">
+                        <span class="rounded-full border border-cyan-500/15 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-700 dark:border-cyan-400/15 dark:bg-cyan-400/10 dark:text-cyan-100">Fast setup</span>
+                        <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">Temporary conversations</span>
+                        <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">Vercel functions</span>
+                    </div>
+                </div>
+                </section>
+
+                <section class="border-t border-slate-200/80 bg-slate-50/70 p-4 sm:p-5 dark:border-white/10 dark:bg-slate-950/75">
+                    <div class="rounded-[24px] border border-slate-200 bg-white/80 p-3 shadow-soft dark:border-white/10 dark:bg-slate-900/55">
+                        <div class="grid items-end gap-3 md:grid-cols-[1fr_auto]">
+                            <textarea id="messageInput" placeholder="Ask anything..." aria-label="Message input" class="min-h-16 w-full resize-none rounded-[18px] border border-slate-200 bg-white px-[18px] py-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-400/50 focus:ring-4 focus:ring-cyan-400/10 dark:border-white/10 dark:bg-slate-950/85 dark:text-slate-100 dark:placeholder:text-slate-500"></textarea>
+                            <button id="sendBtn" class="rounded-[18px] bg-gradient-to-br from-sky-300 via-cyan-400 to-blue-600 px-5 py-3 text-sm font-medium text-slate-950 transition hover:-translate-y-0.5 hover:from-sky-200 hover:via-cyan-300 hover:to-blue-500 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0" type="button">Send</button>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex justify-between gap-2 px-1 text-xs text-slate-500">
+                        <span>Enter to send</span>
+                        <span>Shift+Enter for a new line</span>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = '/api/chat';
+        const HEALTH_URL = '/api/health';
+        const baseBadgeClass = 'rounded-full border px-3 py-2 text-sm backdrop-blur';
+        const SYSTEM_PROMPT = window.APP_CONFIG?.systemPrompt || '';
+
+        let isSending = false;
+        let conversationHistory = [];
+
+        const messagesEl = document.getElementById('messages');
+        const welcomeEl = document.getElementById('welcome');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const newChatBtn = document.getElementById('newChatBtn');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const statusBadge = document.getElementById('statusBadge');
+        const apiBadge = document.getElementById('apiBadge');
+
+        function updateThemeToggleLabel() {
+            const isDark = document.documentElement.classList.contains('dark');
+            themeToggleBtn.textContent = isDark ? 'Light mode' : 'Dark mode';
+        }
+
+        function toggleTheme() {
+            const root = document.documentElement;
+            const willBeDark = !root.classList.contains('dark');
+            root.classList.toggle('dark', willBeDark);
+            localStorage.setItem('theme', willBeDark ? 'dark' : 'light');
+            updateThemeToggleLabel();
+        }
+
+        function getBadgeClass(kind) {
+            if (kind === 'online') {
+                return baseBadgeClass + ' border-emerald-400/35 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-200';
+            }
+
+            if (kind === 'warn') {
+                return baseBadgeClass + ' border-amber-400/35 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-200';
+            }
+
+            if (kind === 'offline') {
+                return baseBadgeClass + ' border-rose-400/35 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-950/40 dark:text-rose-200';
+            }
+
+            return baseBadgeClass + ' border-slate-200 bg-white/70 text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400';
+        }
+
+        function setStatus(text, kind) {
+            statusBadge.textContent = text;
+            statusBadge.className = getBadgeClass(kind);
+        }
+
+        function setApiStatus(text, kind) {
+            apiBadge.textContent = text;
+            apiBadge.className = getBadgeClass(kind);
+        }
+
+        function autoResize() {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 180) + 'px';
+        }
+
+        function addMessage(role, text, isError) {
+            if (welcomeEl) {
+                welcomeEl.remove();
+            }
+
+            const row = document.createElement('div');
+            row.className = role === 'user' ? 'flex justify-end' : 'flex';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'max-w-[88%] whitespace-pre-wrap break-words rounded-[22px] border px-4 py-3.5 leading-7 shadow-soft sm:max-w-[760px]';
+
+            if (role === 'user') {
+                bubble.className += ' border-cyan-300/25 bg-gradient-to-br from-blue-600/95 via-sky-500/95 to-cyan-400/90 text-white';
+            } else if (isError) {
+                bubble.className += ' border-rose-300/60 bg-rose-50 text-rose-900 dark:border-rose-400/30 dark:bg-rose-950/40 dark:text-slate-100';
+            } else {
+                bubble.className += ' border-slate-200 bg-white text-slate-800 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-100';
+            }
+
+            bubble.textContent = text;
+            row.appendChild(bubble);
+            messagesEl.appendChild(row);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function resetChat() {
+            conversationHistory = [];
+            messagesEl.innerHTML = '';
+            messagesEl.appendChild(welcomeEl || buildWelcome());
+            messageInput.value = '';
+            autoResize();
+            messageInput.focus();
+        }
+
+        function buildWelcome() {
+            const wrapper = document.createElement('div');
+            wrapper.id = 'welcome';
+            wrapper.className = 'mx-auto my-auto max-w-[680px] text-center text-slate-500 dark:text-slate-400';
+            wrapper.innerHTML = '<div class="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-[28px] border border-slate-200 bg-gradient-to-br from-sky-300/25 via-cyan-400/15 to-emerald-400/15 text-[34px] font-semibold text-slate-900 shadow-soft dark:border-white/10 dark:text-white">AI</div><h2 class="mb-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl dark:text-white">Start chatting</h2><p class="mx-auto max-w-[560px] text-sm leading-7 text-slate-600 sm:text-base dark:text-slate-400">A lightweight, better-looking chat surface with no login, no landing page, no stored history, and API status visible at the top.</p><div class="mt-6 flex flex-wrap items-center justify-center gap-2"><span class="rounded-full border border-cyan-500/15 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-700 dark:border-cyan-400/15 dark:bg-cyan-400/10 dark:text-cyan-100">Fast setup</span><span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">Temporary conversations</span><span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">Vercel functions</span></div>';
+            return wrapper;
+        }
+
+        async function checkHealth() {
+            try {
+                const response = await fetch(HEALTH_URL);
+                if (!response.ok) {
+                    throw new Error('Health check failed');
+                }
+                setStatus('Connected', 'online');
+            } catch (error) {
+                setStatus('Offline', 'offline');
+            }
+        }
+
+        async function checkApiKeys() {
+            try {
+                const response = await fetch(API_BASE);
+                if (!response.ok) {
+                    throw new Error('API status failed');
+                }
+
+                const data = await response.json();
+
+                if (data.status === 'active') {
+                    setApiStatus(`APIs Active: ${data.availableKeys}/${data.configuredKeys}`, 'online');
+                    return;
+                }
+
+                if (data.status === 'inactive') {
+                    setApiStatus(`APIs Inactive: ${data.availableKeys}/${data.configuredKeys}`, 'warn');
+                    return;
+                }
+
+                setApiStatus('APIs Not Configured', 'offline');
+            } catch (error) {
+                setApiStatus('API Status Unknown', 'offline');
+            }
+        }
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || isSending) {
+                return;
+            }
+
+            isSending = true;
+            sendBtn.disabled = true;
+            messageInput.disabled = true;
+
+            addMessage('user', text, false);
+            messageInput.value = '';
+            autoResize();
+
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        history: conversationHistory,
+                        systemPrompt: SYSTEM_PROMPT
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Request failed');
+                }
+
+                conversationHistory.push({ role: 'user', content: text });
+                conversationHistory.push({ role: 'assistant', content: data.reply || 'No response received.' });
+                addMessage('assistant', data.reply || 'No response received.', data.source && data.source !== 'gemini');
+            } catch (error) {
+                addMessage('assistant', 'Unable to reach the chat service right now.', true);
+                setStatus('Offline', 'offline');
+                checkApiKeys();
+            } finally {
+                isSending = false;
+                sendBtn.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        messageInput.addEventListener('input', autoResize);
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        themeToggleBtn.addEventListener('click', toggleTheme);
+        sendBtn.addEventListener('click', sendMessage);
+        newChatBtn.addEventListener('click', resetChat);
+
+        updateThemeToggleLabel();
+        autoResize();
+        checkHealth();
+        checkApiKeys();
+        setInterval(checkHealth, 30000);
+        setInterval(checkApiKeys, 30000);
+        messageInput.focus();
+    </script>
+</body>
+</html>

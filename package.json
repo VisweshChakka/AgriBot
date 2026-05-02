@@ -1,0 +1,13 @@
+{
+  "name": "buddy-ai-chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Single-page Agribot app with Vercel serverless functions",
+  "type": "commonjs",
+  "scripts": {},
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.2.3",
+    "uuid": "^13.0.0"
+  }
+}
